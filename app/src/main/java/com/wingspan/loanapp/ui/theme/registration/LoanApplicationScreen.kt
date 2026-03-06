@@ -1,7 +1,9 @@
-package com.wingspan.loanapp.ui.theme.screens
+package com.wingspan.loanapp.ui.theme.registration
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.widget.Toast
+import androidx.annotation.RequiresExtension
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,7 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,11 +26,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -39,6 +40,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,21 +54,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.Icon
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.material.icons.filled.ArrowBack
 import com.wingspan.loanapp.data.InputOptions
 import com.wingspan.loanapp.data.LoanScreens
+import com.wingspan.loanapp.data.OtpVerifyRequest
 import com.wingspan.loanapp.utils.NetworkUtils
-import com.wingspan.loanapp.viewmodel.RegistrationViewModel
+import com.wingspan.loanapp.ui.theme.registration.RegistrationViewModel
 
 // --- Constants for employment types ---
 private const val EMPLOYMENT_SALARIED = "Salaried"
@@ -73,17 +72,45 @@ private const val EMPLOYMENT_SELF_EMPLOYED = "Self Employed"
 private const val EMPLOYMENT_PRIVATE = "Private Employee"
 private const val EMPLOYMENT_GOVERNMENT = "Government Employee"
 
+@RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @Composable
 fun LoanApplicationScreen(onBackNavigationClick :() ->Unit,viewmodel: RegistrationViewModel=hiltViewModel()) {
 
     var context = LocalContext.current
     var currentStep by remember { mutableStateOf(1) }
+    //convert stateflow to composable state
+    val uiState by viewmodel.uiState.collectAsState()
 
 
+
+    LaunchedEffect(uiState) {
+        when(uiState) {
+            is RegistrationState.Loading -> {
+                // Show a progress indicator if needed
+            }
+            is RegistrationState.OtpSent -> {
+
+                Toast.makeText(context, "OTP sent successfully", Toast.LENGTH_SHORT).show()
+            }
+            is RegistrationState.OtpVerified -> {
+                Toast.makeText(context, "OTP verified successfully", Toast.LENGTH_SHORT).show()
+            }
+            is RegistrationState.FormSubmitted -> {
+                Toast.makeText(context, "Form submitted successfully", Toast.LENGTH_SHORT).show()
+            }
+            is RegistrationState.Error -> {
+                val message = (uiState as RegistrationState.Error).message
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            }
+            else -> {}
+        }
+    }
 
     // --- Local helper functions ---
     fun handleStep1(): Boolean = viewmodel.validatePersonalDetails().also { valid ->
-        if (valid) currentStep++
+        if (valid && uiState is RegistrationState.OtpVerified) {
+            currentStep++
+        }
     }
 
     fun handleStep2(): Boolean = viewmodel.validateLoanDetails().also { valid ->
@@ -97,7 +124,7 @@ fun LoanApplicationScreen(onBackNavigationClick :() ->Unit,viewmodel: Registrati
     fun handleStep4() {
         if (!viewmodel.validateAddressDetails()) return
         if (NetworkUtils.isNetworkAvailable(context)) {
-            // viewmodel.submitApplication()
+            // viewmodel.submitForm()
         } else {
             Toast.makeText(context, "No internet connection", Toast.LENGTH_SHORT).show()
         }
@@ -122,7 +149,15 @@ fun LoanApplicationScreen(onBackNavigationClick :() ->Unit,viewmodel: Registrati
             onBackNavigationClick()
         },
         screens = LoanScreens(
-            personal = { PersonalScreen(viewmodel) },
+            personal = { PersonalScreen(
+                viewmodel,
+                onOtpClick = { number ->
+                    viewmodel.sendOtp(number)
+                },
+                onOtpVerify = {number,otp->
+                    viewmodel.verifyOtp(OtpVerifyRequest(number,otp))
+                }
+            ) },
             loanDetails = { LoanDetailsScreen(viewmodel) },
             financial = { FinancialScreen(viewmodel) },
             address = { AddressScreen(viewmodel) }
@@ -199,13 +234,13 @@ fun FinancialScreen(viewModel: RegistrationViewModel) {
 }
 
 @Composable
-fun PersonalScreen(viewModel: RegistrationViewModel) {
+fun PersonalScreen(viewModel: RegistrationViewModel,onOtpClick:(String)->Unit,onOtpVerify:(String,String) -> Unit) {
 
 
-    val state = viewModel.state
-
+    var state = viewModel.state
+    val uiState by viewModel.uiState.collectAsState() // observe API call state
     Column {
-
+        // --- Name field ---
         CustomInputField(
             value = state.name,
             error = state.nameError,
@@ -215,7 +250,7 @@ fun PersonalScreen(viewModel: RegistrationViewModel) {
         )
 
         Spacer(modifier = Modifier.height(12.dp))
-
+        // --- DOB field ---
         CustomInputField(
             value = state.dob,
             error = state.dobError,
@@ -225,7 +260,7 @@ fun PersonalScreen(viewModel: RegistrationViewModel) {
         )
 
         Spacer(modifier = Modifier.height(12.dp))
-
+        // --- Mobile number field ---
         CustomInputField(
             value = state.mobile,
             error = state.mobileError,
@@ -235,6 +270,58 @@ fun PersonalScreen(viewModel: RegistrationViewModel) {
             options=InputOptions( keyboardType = KeyboardType.Number, maxLength = 10,
                 onlyDigits = true),
         )
+
+        Spacer(modifier = Modifier.height(12.dp))
+        if(uiState == RegistrationState.OtpSent){
+            CustomInputField(
+                value = state.otp,
+                error = state.otpError,
+                onValueChange = { viewModel.onOtpChange(it) },
+                placeholder = "Enter OTP",
+                modifier = Modifier.fillMaxWidth(),
+                options = InputOptions(
+                    keyboardType = KeyboardType.Number,
+                    maxLength = 6,
+                    onlyDigits = true
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = {
+                    val otpError = viewModel.validateOtp()
+                   state = state.copy(otpError = otpError)
+                    if (otpError == null) {
+                        onOtpVerify(state.mobile,state.otp)
+                    }
+                }
+            ) {
+                Text("Verify OTP")
+            }
+        }else{
+            // --- Send OTP button (before OTP sent) ---
+            Button(
+                onClick = {
+                    val error = viewModel.validateMobile()
+                    state = state.copy(mobileError = error)
+                    if (error == null) {
+                        onOtpClick(state.mobile)
+                    }
+                },
+                enabled = uiState != RegistrationState.Loading
+            ) {
+                if (uiState == RegistrationState.Loading) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Send OTP")
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 

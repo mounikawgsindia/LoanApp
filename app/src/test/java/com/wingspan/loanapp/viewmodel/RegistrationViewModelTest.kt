@@ -1,5 +1,6 @@
 package com.wingspan.loanapp.viewmodel
 
+import com.wingspan.loanapp.ui.theme.registration.RegistrationViewModel
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before

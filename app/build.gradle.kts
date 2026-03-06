@@ -62,6 +62,15 @@ dependencies {
     // Hilt + Jetpack Compose Navigation
     implementation(libs.androidx.hilt.navigation.compose)
 
+    // ViewModel + Kotlin Coroutines support
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+
+
+    // OkHttp
+    implementation(libs.okhttp)
+    implementation(libs.logging.interceptor)
+    implementation(libs.converter.gson)
+    implementation(libs.retrofit)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

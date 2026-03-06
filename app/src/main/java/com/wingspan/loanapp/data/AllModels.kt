@@ -14,11 +14,13 @@ data class PersonalDataState(
     val email: String = "mounika@wgsindia.com",
     val mobile: String = "8125342434",
     val dob: String = "20/05/1990",
+    val otp:String ="67890",
 
     val nameError: String? = null,
     val emailError: String? = null,
     val mobileError: String? = null,
-    val dobError: String? = null
+    val dobError: String? = null,
+    val otpError :String ?=null
 )
 
 data class LoanDetailsState(
@@ -64,3 +66,15 @@ data class InputOptions(
     val maxLength: Int? = null,
     val onlyDigits: Boolean = false
 )
+
+data class FormData(
+    val name: String,
+    val phone: String,
+    val email: String,
+    val address: String
+)
+
+data class ResponseData(var msg:String?,var error:String?, var success:Boolean)
+
+data class OtpVerifyRequest( val phone: String,
+                              val otp: String)
