@@ -1,0 +1,50 @@
+package com.wingspan.loanapp.data
+
+data class LoanProduct(
+    val title: String,
+    val image: Int
+)
+
+
+data class PersonalDataState(
+    val name: String = "mounika",
+    val email: String = "mounika@wgsindia.com",
+    val mobile: String = "8125342434",
+    val dob: String = "20/05/1990",
+
+    val nameError: String? = null,
+    val emailError: String? = null,
+    val mobileError: String? = null,
+    val dobError: String? = null
+)
+
+data class LoanDetailsState(
+
+    val loanType: String = "",
+    val monthlyIncome: String = "",
+    val employmentType: String = "",
+
+    val loanTypeError: String? = null,
+    val incomeError: String? = null,
+    val employmentError: String? = null
+
+)
+data class FinancialState(
+
+    val cibilScore: String = "",
+    val cibilError: String? = null,
+
+    val presentEmi: String = "",
+    val emiError: String? = null
+
+)
+
+data class AddressState(
+
+    val address: String = "",
+    val addressError: String? = null,
+
+    val pinCode: String = "",
+    val pinError: String? = null
+
+)
