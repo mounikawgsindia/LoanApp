@@ -51,16 +51,16 @@ kapt {
     correctErrorTypes = true
 }
 dependencies {
-    implementation("androidx.compose.material:material-icons-extended")
+    implementation(libs.androidx.material.icons.extended)
 //navigation
-    implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation(libs.androidx.navigation.compose)
     // Hilt
-    implementation("com.google.dagger:hilt-android:2.51")
+    implementation(libs.hilt.android)
 
-    kapt("com.google.dagger:hilt-compiler:2.51")
+    kapt(libs.hilt.compiler)
 
     // Hilt + Jetpack Compose Navigation
-    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    implementation(libs.androidx.hilt.navigation.compose)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

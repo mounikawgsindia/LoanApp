@@ -1,5 +1,6 @@
 package com.wingspan.loanapp.ui.theme.screens
 
+import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -50,83 +51,87 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Icon
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
-
+import androidx.compose.material.icons.filled.ArrowBack
+import com.wingspan.loanapp.data.InputOptions
+import com.wingspan.loanapp.data.LoanScreens
 import com.wingspan.loanapp.utils.NetworkUtils
 import com.wingspan.loanapp.viewmodel.RegistrationViewModel
 
+// --- Constants for employment types ---
+private const val EMPLOYMENT_SALARIED = "Salaried"
+private const val EMPLOYMENT_SELF_EMPLOYED = "Self Employed"
+private const val EMPLOYMENT_PRIVATE = "Private Employee"
+private const val EMPLOYMENT_GOVERNMENT = "Government Employee"
+
 @Composable
-fun LoanApplicationScreen(onBackNavigationClick :() ->Unit,viewmodel: RegistrationViewModel= hiltViewModel()) {
-    val state = viewmodel.state
+fun LoanApplicationScreen(onBackNavigationClick :() ->Unit,viewmodel: RegistrationViewModel=hiltViewModel()) {
+
     var context = LocalContext.current
     var currentStep by remember { mutableStateOf(1) }
 
 
+
+    // --- Local helper functions ---
+    fun handleStep1(): Boolean = viewmodel.validatePersonalDetails().also { valid ->
+        if (valid) currentStep++
+    }
+
+    fun handleStep2(): Boolean = viewmodel.validateLoanDetails().also { valid ->
+        if (valid) currentStep++
+    }
+
+    fun handleStep3(): Boolean = viewmodel.validateFinancialDetails().also { valid ->
+        if (valid) currentStep++
+    }
+
+    fun handleStep4() {
+        if (!viewmodel.validateAddressDetails()) return
+        if (NetworkUtils.isNetworkAvailable(context)) {
+            // viewmodel.submitApplication()
+        } else {
+            Toast.makeText(context, "No internet connection", Toast.LENGTH_SHORT).show()
+        }
+    }
+    val stepActions = mapOf(
+        1 to { handleStep1() },
+        2 to { handleStep2() },
+        3 to { handleStep3() },
+        4 to { handleStep4() }
+    )
     LoanApplicationScreenUI(
 
         onNextButtonClick = {
-            when (currentStep) {
-
-                /* Step 1 Validation */
-                1 -> {
-                    if (!viewmodel.validatePersonalDetails()) return@LoanApplicationScreenUI
-                    currentStep++
-                }
-
-                2 -> {
-                    if (!viewmodel.validateLoanDetails()) return@LoanApplicationScreenUI
-                    currentStep++
-                }
-
-                3 -> {
-                    if (!viewmodel.validateFinancialDetails()) return@LoanApplicationScreenUI
-                    currentStep++
-                }
-
-                4 -> {
-                    if (!viewmodel.validateAddressDetails()) return@LoanApplicationScreenUI
-                    if (NetworkUtils.isNetworkAvailable(context)) {
-                        //  viewmodel.submitApplication()
-                    } else {
-                        Toast.makeText(context, "No internet connection", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-
-
+            stepActions[currentStep]?.invoke()
         },
         currentStep = currentStep,
-        personalScreen = {
-            PersonalScreen(viewmodel)
-        },
-        loanDetailsScreen = {
-            LoanDetailsScreen(
-                viewmodel,
-            )
-        },
-        financialScreen = {
-            FinancialScreen(viewmodel)
-        },
-        addressScreen = {
-            AddressScreen(viewmodel)
-        },
+
         onBackClick = {
             currentStep--
         },
         onBackNavigationClick = {
             onBackNavigationClick()
-        }
+        },
+        screens = LoanScreens(
+            personal = { PersonalScreen(viewmodel) },
+            loanDetails = { LoanDetailsScreen(viewmodel) },
+            financial = { FinancialScreen(viewmodel) },
+            address = { AddressScreen(viewmodel) }
+        )
     )
 
 
 }
+
 
 @Composable
 fun AddressScreen(viewModel: RegistrationViewModel) {
@@ -150,9 +155,9 @@ fun AddressScreen(viewModel: RegistrationViewModel) {
             error = state.pinError,
             onValueChange = { viewModel.onPinCodeChange(it) },
             placeholder = "Enter 6-digit PIN code",
-            keyboardType = KeyboardType.Number,
-            maxLength = 6,
-            onlyDigits = true,
+            options=InputOptions( keyboardType = KeyboardType.Number,
+                maxLength = 6,
+                onlyDigits = true),
             modifier = Modifier.fillMaxWidth()
         )
     }
@@ -171,8 +176,9 @@ fun FinancialScreen(viewModel: RegistrationViewModel) {
                 error = state.cibilError,
                 onValueChange = { viewModel.onCibilChange(it) },
                 placeholder = "Enter CIBIL score (300-900)",
-                keyboardType = KeyboardType.Number,
-                onlyDigits = true,
+
+                options=InputOptions( keyboardType = KeyboardType.Number,
+                    onlyDigits = true),
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -183,8 +189,9 @@ fun FinancialScreen(viewModel: RegistrationViewModel) {
                 error = state.emiError,
                 onValueChange = { viewModel.onPresentEmiChange(it) },
                 placeholder = "Enter current monthly EMI (0 if none)",
-                keyboardType = KeyboardType.Number,
-                onlyDigits = true,
+                options=InputOptions( keyboardType = KeyboardType.Number,
+                    onlyDigits = true),
+
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -225,9 +232,8 @@ fun PersonalScreen(viewModel: RegistrationViewModel) {
             onValueChange = { viewModel.onMobileChange(it) },
             placeholder = "Enter your mobile number",
             modifier = Modifier.fillMaxWidth(),
-            keyboardType = KeyboardType.Number,
-            maxLength = 10,
-            onlyDigits = true
+            options=InputOptions( keyboardType = KeyboardType.Number, maxLength = 10,
+                onlyDigits = true),
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -248,10 +254,7 @@ fun LoanApplicationScreenUI(
     onBackClick: () -> Unit,
     onBackNavigationClick:() -> Unit,
     currentStep: Int,
-    personalScreen: @Composable () -> Unit,
-    loanDetailsScreen: @Composable () -> Unit,
-    financialScreen: @Composable () -> Unit,
-    addressScreen: @Composable () -> Unit
+    screens: LoanScreens
 ) {
 
     Column(
@@ -274,7 +277,7 @@ fun LoanApplicationScreenUI(
                 modifier = Modifier.align(Alignment.CenterStart)
             ) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back"
                 )
             }
@@ -313,10 +316,10 @@ fun LoanApplicationScreenUI(
             ) {
 
                 when (currentStep) {
-                    1 -> personalScreen()
-                    2 -> loanDetailsScreen()
-                    3 -> financialScreen()
-                   4 -> addressScreen()
+                    1 -> screens.personal()
+                    2 -> screens.loanDetails()
+                    3 -> screens.financial()
+                   4 -> screens.address()
 
                 }
 
@@ -400,8 +403,8 @@ fun LoanDetailsScreen(
             error = state.incomeError,
             onValueChange = { viewModel.onMonthlyIncomeChange(it) },
             placeholder = "Enter monthly income",
-            keyboardType = KeyboardType.Number,
-            onlyDigits = true
+            options=InputOptions( keyboardType = KeyboardType.Number,
+                onlyDigits = true),
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -417,27 +420,27 @@ fun LoanDetailsScreen(
         Spacer(modifier = Modifier.height(10.dp))
 
         EmploymentOption(
-            title = "Salaried",
-            selected = state.employmentType == "Salaried",
-            onClick = { viewModel.onEmploymentTypeChange("Salaried") }
+            title = EMPLOYMENT_SALARIED,
+            selected = state.employmentType == EMPLOYMENT_SALARIED,
+            onClick = { viewModel.onEmploymentTypeChange(EMPLOYMENT_SALARIED) }
         )
 
         EmploymentOption(
-            title = "Self Employed",
-            selected = state.employmentType == "Self Employed",
-            onClick = { viewModel.onEmploymentTypeChange("Self Employed") }
+            title = EMPLOYMENT_SELF_EMPLOYED,
+            selected = state.employmentType == EMPLOYMENT_SELF_EMPLOYED,
+            onClick = { viewModel.onEmploymentTypeChange(EMPLOYMENT_SELF_EMPLOYED) }
         )
 
         EmploymentOption(
-            title = "Private Employee",
-            selected = state.employmentType == "Private Employee",
-            onClick = { viewModel.onEmploymentTypeChange("Private Employee") }
+            title = EMPLOYMENT_PRIVATE,
+            selected = state.employmentType == EMPLOYMENT_PRIVATE,
+            onClick = { viewModel.onEmploymentTypeChange(EMPLOYMENT_PRIVATE) }
         )
 
         EmploymentOption(
-            title = "Government Employee",
-            selected = state.employmentType == "Government Employee",
-            onClick = { viewModel.onEmploymentTypeChange("Government Employee") }
+            title = EMPLOYMENT_GOVERNMENT,
+            selected = state.employmentType == EMPLOYMENT_GOVERNMENT,
+            onClick = { viewModel.onEmploymentTypeChange(EMPLOYMENT_GOVERNMENT) }
         )
 
         state.employmentError?.let {
@@ -602,38 +605,25 @@ fun StepItem(number: Int, title: String, active: Boolean) {
     }
 }
 
-
-
+@SuppressLint("ModifierParameter")
 @Composable
 fun CustomInputField(
     value: String,
     error: String?,
     onValueChange: (String) -> Unit,
     placeholder: String = "",
-    isPassword: Boolean = false,
     modifier: Modifier = Modifier,
-    keyboardType: KeyboardType = KeyboardType.Text,
-    maxLength: Int? = null,
-    onlyDigits: Boolean = false,
+    options: InputOptions = InputOptions(),
     onClick: (() -> Unit)? = null,
-    isSingleLine: Boolean = true
 ) {
-
-    var passwordVisible by remember { mutableStateOf(false) }
-
     Column(modifier = modifier) {
-
         Spacer(modifier = Modifier.height(6.dp))
 
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    color = Color(0xFFEFEFEF), // Light Grey
-                    shape = RoundedCornerShape(10.dp)
-                )
-
-                .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+                .background(Color(0xFFEFEFEF), RoundedCornerShape(10.dp))
+                .clickableIfNotNull(onClick)
                 .padding(horizontal = 14.dp, vertical = 12.dp)
         ) {
 
@@ -644,31 +634,17 @@ fun CustomInputField(
 
                 BasicTextField(
                     value = value,
-                    onValueChange = {
+                    onValueChange = { input ->
                         if (onClick != null) return@BasicTextField
-
-                        var filtered = it
-                        if (onlyDigits) filtered = filtered.filter { ch -> ch.isDigit() }
-                        if (maxLength != null) filtered = filtered.take(maxLength)
-
-                        onValueChange(filtered)
-
+                        onValueChange(input.filterInput(options))
                     },
-
-
-                    minLines = if (isSingleLine) 1 else 5,
                     textStyle = TextStyle(fontSize = 14.sp, color = Color.Black),
-                    keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-                    visualTransformation =
-                        if (isPassword && !passwordVisible)
-                            PasswordVisualTransformation()
-                        else
-                            VisualTransformation.None,
+                    keyboardOptions = KeyboardOptions(keyboardType = options.keyboardType),
                     modifier = Modifier.weight(1f),
                     decorationBox = { innerTextField ->
                         if (value.isEmpty()) {
                             Text(
-                                placeholder,
+                                text = placeholder,
                                 color = Color(0xFF9E9E9E),
                                 fontSize = 14.sp
                             )
@@ -676,14 +652,12 @@ fun CustomInputField(
                         innerTextField()
                     }
                 )
-
-              
             }
         }
 
-        if (!error.isNullOrEmpty()) {
+        error?.takeIf { it.isNotEmpty() }?.let {
             Text(
-                text = error,
+                text = it,
                 color = Color.Red,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(top = 4.dp)
@@ -691,6 +665,18 @@ fun CustomInputField(
         }
     }
 }
+
+/** Helper extension for input filtering */
+private fun String.filterInput(options: InputOptions): String {
+    var result = this
+    if (options.onlyDigits) result = result.filter { it.isDigit() }
+    if (options.maxLength != null) result = result.take(options.maxLength)
+    return result
+}
+
+/** Helper extension for clickable modifier */
+private fun Modifier.clickableIfNotNull(action: (() -> Unit)?): Modifier =
+    if (action != null) this.clickable { action() } else this
 @Preview(showBackground = true)
 @Composable
 fun LoanApplicationScreenPreview() {
@@ -701,19 +687,14 @@ fun LoanApplicationScreenPreview() {
                 onNextButtonClick = {},
                 onBackClick = {},
                 currentStep = 1,
-                personalScreen = {
-                    Text("Personal Screen Preview")
-                },
-                loanDetailsScreen = {
-                    Text("Loan Details Screen Preview")
-                },
-                financialScreen = {
-                    Text("Financial Screen Preview")
-                },
-                addressScreen = {
-                    Text("Address Screen Preview")
-                },
-                onBackNavigationClick = { }
+
+                onBackNavigationClick = { },
+                screens = LoanScreens(
+                    personal = {  },
+                    loanDetails = {  },
+                    financial = { },
+                    address = {  }
+                )
             )
         }
     }

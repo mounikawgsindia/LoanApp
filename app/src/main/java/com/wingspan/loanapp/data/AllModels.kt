@@ -1,5 +1,8 @@
 package com.wingspan.loanapp.data
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.text.input.KeyboardType
+
 data class LoanProduct(
     val title: String,
     val image: Int
@@ -47,4 +50,17 @@ data class AddressState(
     val pinCode: String = "",
     val pinError: String? = null
 
+)
+
+data class LoanScreens(
+    val personal: @Composable () -> Unit,
+    val loanDetails: @Composable () -> Unit,
+    val financial: @Composable () -> Unit,
+    val address: @Composable () -> Unit
+)
+
+data class InputOptions(
+    val keyboardType: KeyboardType = KeyboardType.Text,
+    val maxLength: Int? = null,
+    val onlyDigits: Boolean = false
 )

@@ -50,7 +50,7 @@ import androidx.navigation.compose.rememberNavController
 import com.wingspan.loanapp.R
 import com.wingspan.loanapp.data.LoanProduct
 import com.wingspan.loanapp.ui.theme.screens.HomeScreen
-
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 
 @Composable
 fun HomeScreen(navigateToLoanScreen:()->Unit) {
@@ -184,7 +184,7 @@ fun HeroSection(navigateToLoanScreen : ()->Unit) {
                             )
                             Spacer(modifier = Modifier.size(4.dp))
                             Icon(
-                                imageVector = Icons.Default.ArrowForward,
+                                imageVector =Icons.AutoMirrored.Filled.ArrowForward,
                                 contentDescription = null
                             )
                         }
