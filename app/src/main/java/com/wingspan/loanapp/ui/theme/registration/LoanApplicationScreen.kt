@@ -108,9 +108,13 @@ fun LoanApplicationScreen(onBackNavigationClick :() ->Unit,viewmodel: Registrati
 
     // --- Local helper functions ---
     fun handleStep1(): Boolean = viewmodel.validatePersonalDetails().also { valid ->
-        if (valid && uiState is RegistrationState.OtpVerified) {
-            currentStep++
-        }
+        if (!valid) return@also
+        currentStep++
+//        if (uiState is RegistrationState.OtpVerified) {
+//            currentStep++
+//        } else {
+//            Toast.makeText(context, "OTP not verified", Toast.LENGTH_SHORT).show()
+//        }
     }
 
     fun handleStep2(): Boolean = viewmodel.validateLoanDetails().also { valid ->
@@ -124,7 +128,7 @@ fun LoanApplicationScreen(onBackNavigationClick :() ->Unit,viewmodel: Registrati
     fun handleStep4() {
         if (!viewmodel.validateAddressDetails()) return
         if (NetworkUtils.isNetworkAvailable(context)) {
-            // viewmodel.submitForm()
+             viewmodel.submitForm()
         } else {
             Toast.makeText(context, "No internet connection", Toast.LENGTH_SHORT).show()
         }
@@ -233,107 +237,6 @@ fun FinancialScreen(viewModel: RegistrationViewModel) {
 
 }
 
-@Composable
-fun PersonalScreen(viewModel: RegistrationViewModel,onOtpClick:(String)->Unit,onOtpVerify:(String,String) -> Unit) {
-
-
-    var state = viewModel.state
-    val uiState by viewModel.uiState.collectAsState() // observe API call state
-    Column {
-        // --- Name field ---
-        CustomInputField(
-            value = state.name,
-            error = state.nameError,
-            onValueChange = { viewModel.onNameChange(it) },
-            placeholder = "Enter your name",
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-        // --- DOB field ---
-        CustomInputField(
-            value = state.dob,
-            error = state.dobError,
-            onValueChange = { viewModel.onDobChange(it) },
-            placeholder = "Date of Birth",
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-        // --- Mobile number field ---
-        CustomInputField(
-            value = state.mobile,
-            error = state.mobileError,
-            onValueChange = { viewModel.onMobileChange(it) },
-            placeholder = "Enter your mobile number",
-            modifier = Modifier.fillMaxWidth(),
-            options=InputOptions( keyboardType = KeyboardType.Number, maxLength = 10,
-                onlyDigits = true),
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-        if(uiState == RegistrationState.OtpSent){
-            CustomInputField(
-                value = state.otp,
-                error = state.otpError,
-                onValueChange = { viewModel.onOtpChange(it) },
-                placeholder = "Enter OTP",
-                modifier = Modifier.fillMaxWidth(),
-                options = InputOptions(
-                    keyboardType = KeyboardType.Number,
-                    maxLength = 6,
-                    onlyDigits = true
-                )
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Button(
-                onClick = {
-                    val otpError = viewModel.validateOtp()
-                   state = state.copy(otpError = otpError)
-                    if (otpError == null) {
-                        onOtpVerify(state.mobile,state.otp)
-                    }
-                }
-            ) {
-                Text("Verify OTP")
-            }
-        }else{
-            // --- Send OTP button (before OTP sent) ---
-            Button(
-                onClick = {
-                    val error = viewModel.validateMobile()
-                    state = state.copy(mobileError = error)
-                    if (error == null) {
-                        onOtpClick(state.mobile)
-                    }
-                },
-                enabled = uiState != RegistrationState.Loading
-            ) {
-                if (uiState == RegistrationState.Loading) {
-                    CircularProgressIndicator(
-                        color = Color.White,
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text("Send OTP")
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        CustomInputField(
-            value = state.email,
-            error = state.emailError,
-            onValueChange = { viewModel.onEmailChange(it) },
-            placeholder = "Enter your email",
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-}
 
 @Composable
 fun LoanApplicationScreenUI(
@@ -442,6 +345,107 @@ fun LoanApplicationScreenUI(
 
             }
         }
+    }
+}
+@Composable
+fun PersonalScreen(viewModel: RegistrationViewModel,onOtpClick:(String)->Unit,onOtpVerify:(String,String) -> Unit) {
+
+
+    var state = viewModel.state
+    val uiState by viewModel.uiState.collectAsState() // observe API call state
+    Column {
+        // --- Name field ---
+        CustomInputField(
+            value = state.name,
+            error = state.nameError,
+            onValueChange = { viewModel.onNameChange(it) },
+            placeholder = "Enter your name",
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+        // --- DOB field ---
+        CustomInputField(
+            value = state.dob,
+            error = state.dobError,
+            onValueChange = { viewModel.onDobChange(it) },
+            placeholder = "Date of Birth",
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+        // --- Mobile number field ---
+        CustomInputField(
+            value = state.mobile,
+            error = state.mobileError,
+            onValueChange = { viewModel.onMobileChange(it) },
+            placeholder = "Enter your mobile number",
+            modifier = Modifier.fillMaxWidth(),
+            options=InputOptions( keyboardType = KeyboardType.Number, maxLength = 10,
+                onlyDigits = true),
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+        if(uiState == RegistrationState.OtpSent){
+            CustomInputField(
+                value = state.otp,
+                error = state.otpError,
+                onValueChange = { viewModel.onOtpChange(it) },
+                placeholder = "Enter OTP",
+                modifier = Modifier.fillMaxWidth(),
+                options = InputOptions(
+                    keyboardType = KeyboardType.Number,
+                    maxLength = 6,
+                    onlyDigits = true
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = {
+                    val otpError = viewModel.validateOtp()
+                    state = state.copy(otpError = otpError)
+                    if (otpError == null) {
+                        onOtpVerify(state.mobile,state.otp)
+                    }
+                }
+            ) {
+                Text("Verify OTP")
+            }
+        }else{
+            // --- Send OTP button (before OTP sent) ---
+            Button(
+                onClick = {
+                    val error = viewModel.validateMobile()
+                    state = state.copy(mobileError = error)
+                    if (error == null) {
+                        onOtpClick(state.mobile)
+                    }
+                },
+                enabled = uiState != RegistrationState.Loading
+            ) {
+                if (uiState == RegistrationState.Loading) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Send OTP")
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        CustomInputField(
+            value = state.email,
+            error = state.emailError,
+            onValueChange = { viewModel.onEmailChange(it) },
+            placeholder = "Enter your email",
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 

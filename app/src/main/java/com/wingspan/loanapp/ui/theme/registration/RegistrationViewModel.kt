@@ -16,12 +16,15 @@ import com.wingspan.loanapp.data.LoanDetailsState
 import com.wingspan.loanapp.data.OtpVerifyRequest
 import com.wingspan.loanapp.data.PersonalDataState
 import com.wingspan.loanapp.data.repository.RegistrationRepository
+import com.wingspan.loanapp.utils.ApiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.onFailure
+import kotlin.onSuccess
 
 @HiltViewModel
 class RegistrationViewModel @Inject constructor(private val repository: RegistrationRepository): ViewModel() {
@@ -50,6 +53,7 @@ class RegistrationViewModel @Inject constructor(private val repository: Registra
     fun onDobChange(value: String) {
         state = state.copy(dob = value, dobError = null)
     }
+
     fun onOtpChange(value: String) {
         state = state.copy(otp = value, otpError = null)
     }
@@ -117,7 +121,6 @@ class RegistrationViewModel @Inject constructor(private val repository: Registra
         }
     }
     fun validateFinancialDetails(): Boolean {
-
         var isValid = true
 
         val cibilError =
@@ -127,15 +130,16 @@ class RegistrationViewModel @Inject constructor(private val repository: Registra
                     isValid = false
                     "CIBIL score must be between 300 and 900"
                 } else null
-            } else null
-
+            } else {
+                isValid = false
+                "Enter CIBIL score"
+            }
 
         val emiError =
             if (financialState.presentEmi.isBlank()) {
                 isValid = false
                 "Enter present monthly EMI"
             } else null
-
 
         financialState = financialState.copy(
             cibilError = cibilError,
@@ -246,38 +250,73 @@ class RegistrationViewModel @Inject constructor(private val repository: Registra
     }
 
 
-    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+
     fun sendOtp(phone: String) = viewModelScope.launch {
         _uiState.value = RegistrationState.Loading
-        try {
-            var response=repository.sendOtp(phone)
-            Log.d("verifyOtp","--->${response}")
-            _uiState.value = RegistrationState.OtpSent
-        } catch (e: Exception) {
-            _uiState.value = RegistrationState.Error(e.message ?: "Failed")
+        val result = repository.sendOtp(phone)
+
+        when (result) {
+            is ApiResult.Success -> {
+                _uiState.value = RegistrationState.OtpSent
+                  Log.d("verifyOtp", "OTP sent successfully")
+
+            }
+
+            is ApiResult.Error -> {
+                _uiState.value = RegistrationState.Error(result.message)
+                Log.d("verifyOtp", "Error: ${result.message}")
+
+            }
         }
     }
 
-    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+
     fun verifyOtp(request: OtpVerifyRequest) = viewModelScope.launch {
         _uiState.value = RegistrationState.Loading
-        try {
-            var response=repository.verifyOtp(request)
-            _uiState.value = RegistrationState.OtpVerified
-            Log.d("verifyOtp","--->${response}")
-        } catch (e: Exception) {
-            _uiState.value = RegistrationState.Error(e.message ?: "Failed")
+
+        val result = repository.verifyOtp(request)
+        when (result) {
+            is ApiResult.Success -> {
+                Log.d("verifyOtp", "OTP sent successfully")
+                _uiState.value = RegistrationState.OtpVerified
+            }
+
+            is ApiResult.Error -> {
+                Log.d("verifyOtp", "Error: ${result.message}")
+                _uiState.value = RegistrationState.Error(result.message)
+            }
+
         }
     }
 
-    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-    fun submitForm(formData: FormData) = viewModelScope.launch {
+
+    fun submitForm() = viewModelScope.launch {
         _uiState.value = RegistrationState.Loading
-        try {
-            repository.submitForm(formData)   // uses FormData
-            _uiState.value = RegistrationState.FormSubmitted
-        } catch (e: Exception) {
-            _uiState.value = RegistrationState.Error(e.message ?: "Failed")
+        var formData= FormData(
+            name =state.name,
+            dob = state.dob,
+            loanType = loanState.loanType,
+            income = loanState.monthlyIncome,
+            email = state.email,
+            employment = loanState.employmentType,
+            cibil = financialState.cibilScore,
+            emi = financialState.presentEmi,
+            address = addressState.address,
+            pincode = addressState.pinCode
+        )
+        Log.d("submitForm", "---${formData}")
+        val result = repository.submitForm("69aac27ecbf8b3f0d0db611f",formData)
+        when (result) {
+            is ApiResult.Success -> {
+                Log.d("submitForm", "OTP sent successfully")
+                _uiState.value = RegistrationState.FormSubmitted
+            }
+
+            is ApiResult.Error -> {
+                Log.d("submitForm", "Error: ${result.message}")
+                _uiState.value = RegistrationState.Error(result.message)
+            }
+
         }
     }
 

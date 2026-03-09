@@ -46,10 +46,17 @@ android {
         compose = true
         buildConfig = true
     }
+
+    testOptions {
+        unitTests.all {
+            it.useJUnitPlatform()
+        }
+    }
 }
 kapt {
     correctErrorTypes = true
 }
+
 dependencies {
     implementation(libs.androidx.material.icons.extended)
 //navigation
@@ -65,7 +72,16 @@ dependencies {
     // ViewModel + Kotlin Coroutines support
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
 
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.kotlin)
 
+    testImplementation(libs.junit.jupiter.api)
+    testRuntimeOnly (libs.junit.jupiter.engine)
+    testImplementation (libs.junit.jupiter.params)
+
+    testImplementation(libs.junit.jupiter.api.v5100)
+    testRuntimeOnly(libs.junit.jupiter.engine.v5100)
+    testImplementation(libs.junit.jupiter.params.v5100)
     // OkHttp
     implementation(libs.okhttp)
     implementation(libs.logging.interceptor)
@@ -79,11 +95,42 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
+    // JUnit 5
+    testImplementation(libs.junit.jupiter.api)
+    testImplementation("org.junit.jupiter:junit-jupiter-params:5.12.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
+    // Mockito core
+    testImplementation("org.mockito:mockito-core:5.5.0")
+    // Mockito Kotlin helpers
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
+
+    // Mockito JUnit 5 integration
+    testImplementation("org.mockito:mockito-junit-jupiter:5.5.0")
+
+    // JUnit 5
+    testImplementation(libs.junit.jupiter.api)        // JUnit 5 API
+    testImplementation(libs.junit.jupiter.params)     // Parameterized tests
+    testRuntimeOnly(libs.junit.jupiter.engine)        // JUnit 5 runtime engine
+
+    // Mockito for JUnit 5 (no inline engine to avoid resolution issues)
+    testImplementation(libs.mockito.core.v550)
+    testImplementation(libs.mockito.kotlin.v510)           // Kotlin helpers
+    testImplementation(libs.mockito.core)       // core
+    testImplementation(libs.mockito.kotlin)  // Kotlin helpers
+    // Optional AndroidX testing for Android unit/instrumentation tests
+    androidTestImplementation(libs.androidx.core)
+    androidTestImplementation(libs.androidx.runner)
+    androidTestImplementation(libs.androidx.espresso.core.v351)
+    testImplementation("io.mockk:mockk:1.13.7")
+    testImplementation("org.jetbrains.kotlin:kotlin-test")
+
+//    testImplementation(libs.junit)
+//    androidTestImplementation(libs.androidx.junit)
+//    androidTestImplementation(libs.androidx.espresso.core)
+//    androidTestImplementation(platform(libs.androidx.compose.bom))
+//    androidTestImplementation(libs.androidx.ui.test.junit4)
+//    debugImplementation(libs.androidx.ui.tooling)
+//    debugImplementation(libs.androidx.ui.test.manifest)
+    testImplementation(kotlin("test"))
 }

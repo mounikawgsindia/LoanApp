@@ -68,13 +68,31 @@ data class InputOptions(
 )
 
 data class FormData(
-    val name: String,
-    val phone: String,
-    val email: String,
-    val address: String
+val name: String,
+val dob: String,
+val loanType: String,
+val income: String,      // Using String to match JSON, or use Int/Double if numeric
+val email: String,
+val employment: String,
+val cibil: String,
+val emi: String,
+val address: String,
+val pincode: String
 )
+
 
 data class ResponseData(var msg:String?,var error:String?, var success:Boolean)
 
 data class OtpVerifyRequest( val phone: String,
+
                               val otp: String)
+
+data class OtpResponse(
+    val success: Boolean,
+    val message: String?,
+    val data: String
+)
+data class OtpRequest(val phone:String)
+data class OtpData(
+    val otpId: String?
+)
