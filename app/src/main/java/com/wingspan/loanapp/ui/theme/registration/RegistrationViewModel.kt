@@ -105,6 +105,7 @@ class RegistrationViewModel @Inject constructor(private val repository: Registra
     }
 
     fun validateMobile(): String? {
+        onOtpChange("")
         return when {
             state.mobile.isBlank() -> "Enter mobile number"
             state.mobile.length != 10 -> "Enter a valid 10-digit mobile number"
@@ -249,7 +250,13 @@ class RegistrationViewModel @Inject constructor(private val repository: Registra
         return valid
     }
 
+    fun updateMobileError(error: String?) {
+        state = state.copy(mobileError = error)
+    }
 
+    fun updateOtpError(error: String?) {
+        state = state.copy(otpError = error)
+    }
 
     fun sendOtp(phone: String) = viewModelScope.launch {
         _uiState.value = RegistrationState.Loading
@@ -258,13 +265,13 @@ class RegistrationViewModel @Inject constructor(private val repository: Registra
         when (result) {
             is ApiResult.Success -> {
                 _uiState.value = RegistrationState.OtpSent
-                  Log.d("verifyOtp", "OTP sent successfully")
+                  Log.d("sendOtp", "OTP sent successfully")
 
             }
 
             is ApiResult.Error -> {
                 _uiState.value = RegistrationState.Error(result.message)
-                Log.d("verifyOtp", "Error: ${result.message}")
+                Log.d("sendOtp", "Error: ${result.message}")
 
             }
         }
@@ -277,7 +284,7 @@ class RegistrationViewModel @Inject constructor(private val repository: Registra
         val result = repository.verifyOtp(request)
         when (result) {
             is ApiResult.Success -> {
-                Log.d("verifyOtp", "OTP sent successfully")
+                Log.d("verifyOtp", "OTP verified successfully")
                 _uiState.value = RegistrationState.OtpVerified
             }
 

@@ -1,5 +1,6 @@
 package com.wingspan.loanapp
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -27,6 +28,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@SuppressLint("NewApi")
 @Composable
 fun AppNavigation(){
     var navController = rememberNavController()
@@ -40,13 +42,19 @@ fun AppNavigation(){
             LoanApplicationScreen(
                 onBackNavigationClick = {
                     navController.popBackStack()
+                },
+                navigateToHomeScreen = {
+                    navController.popBackStack()
                 }
             )
         }
         composable("home") {
-            HomeScreen(navigateToLoanScreen ={
-                navController.navigate("loan")
-            })
+            HomeScreen(
+                navigateToLoanScreen = {
+                    navController.navigate("loan")
+                }
+
+            )
         }
 
     }

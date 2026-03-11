@@ -7,14 +7,12 @@ data class LoanProduct(
     val title: String,
     val image: Int
 )
-
-
 data class PersonalDataState(
-    val name: String = "mounika",
-    val email: String = "mounika@wgsindia.com",
-    val mobile: String = "8125342434",
-    val dob: String = "20/05/1990",
-    val otp:String ="67890",
+    val name: String = "",
+    val email: String = "",
+    val mobile: String = "",
+    val dob: String = "",
+    val otp:String ="",
 
     val nameError: String? = null,
     val emailError: String? = null,
@@ -22,6 +20,20 @@ data class PersonalDataState(
     val dobError: String? = null,
     val otpError :String ?=null
 )
+
+//data class PersonalDataState(
+//    val name: String = "mounika",
+//    val email: String = "mounika@wgsindia.com",
+//    val mobile: String = "8125342434",
+//    val dob: String = "20/05/1990",
+//    val otp:String ="67890",
+//
+//    val nameError: String? = null,
+//    val emailError: String? = null,
+//    val mobileError: String? = null,
+//    val dobError: String? = null,
+//    val otpError :String ?=null
+//)
 
 data class LoanDetailsState(
 
@@ -86,13 +98,12 @@ data class ResponseData(var msg:String?,var error:String?, var success:Boolean)
 data class OtpVerifyRequest( val phone: String,
 
                               val otp: String)
-
+data class ApiError(
+    val error: String? = null,
+    val message: String? = null
+)
 data class OtpResponse(
     val success: Boolean,
-    val message: String?,
-    val data: String
+    val message: String?
 )
 data class OtpRequest(val phone:String)
-data class OtpData(
-    val otpId: String?
-)

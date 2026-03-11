@@ -330,7 +330,7 @@ fun validateOTP_emptyMobile_returnsError() {
 
 
         val response = ApiResult.Success(
-            OtpResponse(success = true, message = "Otp sent successfully", data = "")
+            OtpResponse(success = true, message = "Otp sent successfully")
         )
         whenever(repository.sendOtp(any<String>())).thenReturn(response)
 
@@ -343,12 +343,14 @@ fun validateOTP_emptyMobile_returnsError() {
     fun `sendOtp updates state to OtpSent on fail`() = runTest {
 
 
-        val response = ApiResult.Error("Failed to send OTP")
+        val response = ApiResult.Error("Invalid phone number")
         whenever(repository.sendOtp(any<String>())).thenReturn(response)
 
-        viewModel.sendOtp("8125342434")
+        viewModel.sendOtp("812534")
         testDispatcher.scheduler.advanceUntilIdle() // Let coroutine finish
+        val state = viewModel.uiState.value
         assertTrue(viewModel.uiState.value is RegistrationState.Error)
+        assertEquals("Invalid phone number",(viewModel.uiState.value as RegistrationState.Error).message)
     }
 
 

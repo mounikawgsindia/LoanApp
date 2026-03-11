@@ -8,21 +8,22 @@ import com.wingspan.loanapp.data.network.ApiServices
 import com.wingspan.loanapp.utils.ApiResult
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody.Companion.toResponseBody
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
-import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.whenever
 import retrofit2.Response
 import java.io.IOException
-import java.net.SocketTimeoutException
 
 class RegistrationRepositoryTest {
 
+    // repository Generic type so no need to test all cases like "No network","APi failed(Server crash)","Tome Out" ... empty data" one api for all this enough and "success state for remaing api"
     private lateinit var apiServices: ApiServices
     private lateinit var repository: RegistrationRepository
 
@@ -33,97 +34,140 @@ class RegistrationRepositoryTest {
         repository = RegistrationRepository(apiServices)
     }
 
+    //send otp
+    @Test
+    fun `sendOtp returns Success when api call successful`() = runTest {
+
+        val response = OtpResponse(true, "OTP Sent")
+
+        whenever(apiServices.sendOtp(any()))
+            .thenReturn(Response.success(response))
+
+        val result = repository.sendOtp("9876543210")
+
+        assertTrue(result is ApiResult.Success)
+        assertEquals(response, (result as ApiResult.Success).data)
+    }
 
     @Test
-    fun testSendOtpApi() = runTest {
-        testApiEdgeCases(
-            apiServiceCall = { apiServices.sendOtp(any()) },
-            repoCall = { repository.sendOtp("8125342434") },
-            successResponse = OtpResponse(true, "OTP sent", "123456"),
-            errorJson = """{"error":"Invalid phone"}""",
-            errorMessageOnFailure = "Invalid phone"
+    fun `sendOtp returns Error when api returns error response`() = runTest {
+
+        val errorJson = """{"error":"Invalid phone number"}"""
+
+        val errorBody = errorJson.toResponseBody("application/json".toMediaTypeOrNull())
+
+        whenever(apiServices.sendOtp(any()))
+            .thenReturn(Response.error(400, errorBody))
+
+        val result = repository.sendOtp("123")
+
+        assertTrue(result is ApiResult.Error)
+        assertEquals("Invalid phone number", (result as ApiResult.Error).message)
+    }
+
+    @Test
+    fun `sendOtp returns Error when api returns error response catch Something went wrong `() = runTest {
+
+        val errorJson = """{"detail":"Invalid phone number"}"""
+
+        val errorBody = errorJson.toResponseBody("application/json".toMediaTypeOrNull())
+
+        whenever(apiServices.sendOtp(any()))
+            .thenReturn(Response.error(400, errorBody))
+
+        val result = repository.sendOtp("123")
+
+        assertTrue(result is ApiResult.Error)
+        assertEquals("Something went wrong", (result as ApiResult.Error).message)
+    }
+
+    @Test
+    fun `sendOtp returns Error on network failure`() = runTest {
+        whenever(apiServices.sendOtp(any())).thenAnswer {
+            throw IOException("Network error")
+        }
+        val result = repository.sendOtp("9876543210")
+        assertTrue(result is ApiResult.Error)
+        assertEquals(
+            "Network error. Please check your connection.",
+            (result as ApiResult.Error).message
         )
     }
 
     @Test
-    fun testVerifyOtpApi() = runTest {
-        testApiEdgeCases(
-            apiServiceCall = { apiServices.verifyOtp(any()) },
-            repoCall = { repository.verifyOtp(OtpVerifyRequest("8125342434", "123456")) },
-            successResponse = ResponseData(
-                msg = "verify successfully",
-                error = "",
-                success = true
-            ),
-            errorJson = """{"error":"OTP invalid"}""",
-            errorMessageOnFailure = "OTP invalid"
-        )
+    fun `sendOtp returns Error on unexpected exception`() = runTest {
+
+        whenever(apiServices.sendOtp(any()))
+            .thenThrow(RuntimeException("Server crashed"))
+
+        val result = repository.sendOtp("9876543210")
+
+        assertTrue(result is ApiResult.Error)
+        assertEquals("Server crashed", (result as ApiResult.Error).message)
     }
 
     @Test
-    fun testSubmitFormApi() = runTest {
-        val formData = FormData(
-            name ="mounika" ,
-            dob ="2017-08-09" ,
-            loanType = "Home loan",
-            income = "70000",
+    fun `sendOtp handles null response body`() = runTest {
+
+        whenever(apiServices.sendOtp(any()))
+            .thenReturn(Response.success(null))
+
+        val result = repository.sendOtp("9876543210")
+
+        assertTrue(result is ApiResult.Success)
+    }
+
+    //verify otp
+    @Test
+    fun `verifyOTp returns Success when api call successful`() = runTest {
+
+        val response = ResponseData(
+            msg = "",
+            error = "",
+            success = true
+        )
+
+        whenever(apiServices.verifyOtp(any()))
+            .thenReturn(Response.success(response))
+
+        val result = repository.verifyOtp(OtpVerifyRequest(
+            phone = "81234567895",
+            otp = "234567"
+        ))
+
+        assertTrue(result is ApiResult.Success)
+        assertEquals(response, (result as ApiResult.Success).data)
+    }
+
+    //submit form
+    //verify otp
+    @Test
+    fun `submitForm returns Success when api call successful`() = runTest {
+
+        val response = ResponseData(
+            msg = "",
+            error = "",
+            success = true
+        )
+
+        whenever(apiServices.submitForm(any(),any()))
+            .thenReturn(Response.success(response))
+
+        val result = repository.submitForm("123",FormData(
+            name = "test",
+            dob = "test",
+            loanType = "test",
+            income = "test",
             email = "test@gmail.com",
             employment = "test",
-            cibil = "350",
-            emi = "3000",
-            address ="sr nagar",
-            pincode = "500038"
-        ) // Example, use your real data
-        testApiEdgeCases(
-            apiServiceCall = { apiServices.submitForm(any(), any()) },
-            repoCall = { repository.submitForm("user123", formData) },
-            successResponse = ResponseData(
-                msg = "submit successfully",
-                error = "",
-                success = true
-            ),
-            errorJson = """{"error":"Form invalid"}""",
-            errorMessageOnFailure = "Form invalid"
-        )
-    }
+            cibil = "test",
+            emi = "test",
+            address = "srnager",
+            pincode = "567890"
+        ))
 
-    // Generic helper
-    private suspend fun <T> testApiEdgeCases(
-        apiServiceCall: suspend () -> Response<T>,
-        repoCall: suspend () -> ApiResult<T>,
-        successResponse: T,
-        errorJson: String,
-        errorMessageOnFailure: String
-    ) {
-        // ✅ Success
-        whenever(apiServiceCall()).thenReturn(Response.success(successResponse))
-        var result = repoCall()
         assertTrue(result is ApiResult.Success)
-
-        // ✅ API failure
-        val errorBody = errorJson.toResponseBody("application/json".toMediaType())
-        whenever(apiServiceCall()).thenReturn(Response.error(400, errorBody))
-        result = repoCall()
-        assertTrue(result is ApiResult.Error)
-        assertEquals(errorMessageOnFailure, (result as ApiResult.Error).message)
-
-        // ✅ Network error
-        whenever(apiServiceCall()).thenThrow(IOException())
-        result = repoCall()
-        assertTrue(result is ApiResult.Error)
-        assertEquals("Network error. Please check your connection.", (result as ApiResult.Error).message)
-
-        // ✅ Timeout
-        whenever(apiServiceCall()).thenThrow(SocketTimeoutException("timeout"))
-        result = repoCall()
-        assertTrue(result is ApiResult.Error)
-        assertEquals("timeout", (result as ApiResult.Error).message)
-
-        // ✅ Unexpected exception
-        whenever(apiServiceCall()).thenThrow(RuntimeException("Unexpected"))
-        result = repoCall()
-        assertTrue(result is ApiResult.Error)
-        assertEquals("Unexpected", (result as ApiResult.Error).message)
+        assertEquals(response, (result as ApiResult.Success).data)
     }
 
 }

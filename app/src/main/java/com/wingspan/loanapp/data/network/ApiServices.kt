@@ -8,18 +8,19 @@ import com.wingspan.loanapp.data.ResponseData
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface ApiServices {
 
 
     //loan submit form
-    @POST("loans/{userId}")
+    @PUT("loans/{userId}")
     suspend fun submitForm(@Path("userId") userId :String,@Body request: FormData): Response<ResponseData>
 
     //send otp
     @POST("loans/send-otp")
-    suspend fun sendOtp(@Body request:OtpRequest): Response<OtpResponse>
+    suspend fun sendOtp(@Body request: OtpRequest): Response<OtpResponse>
 
     //verify otp
     @POST("loans/verify-otp")

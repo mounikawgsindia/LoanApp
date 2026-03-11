@@ -23,12 +23,21 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-
+    signingConfigs{
+        create("release"){
+            storeFile = file(project.findProperty("KEYSTORE_FILE") ?: "loanapp.jks")
+            storePassword = project.findProperty("KEYSTORE_PASSWORD") as String?
+            keyAlias = project.findProperty("KEY_ALIAS") as String?
+            keyPassword = project.findProperty("KEY_PASSWORD") as String?
+        }
+    }
     buildTypes {
 
-
         release {
-            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
+            buildConfigField("boolean", "ENABLE_LOG", "false")
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -48,6 +57,7 @@ android {
     }
 
     testOptions {
+
         unitTests.all {
             it.useJUnitPlatform()
         }
@@ -56,81 +66,62 @@ android {
 kapt {
     correctErrorTypes = true
 }
-
 dependencies {
-    implementation(libs.androidx.material.icons.extended)
-//navigation
-    implementation(libs.androidx.navigation.compose)
-    // Hilt
-    implementation(libs.hilt.android)
 
-    kapt(libs.hilt.compiler)
-
-    // Hilt + Jetpack Compose Navigation
-    implementation(libs.androidx.hilt.navigation.compose)
-
-    // ViewModel + Kotlin Coroutines support
-    implementation(libs.androidx.lifecycle.viewmodel.ktx)
-
-    testImplementation(libs.mockito.core)
-    testImplementation(libs.mockito.kotlin)
-
-    testImplementation(libs.junit.jupiter.api)
-    testRuntimeOnly (libs.junit.jupiter.engine)
-    testImplementation (libs.junit.jupiter.params)
-
-    testImplementation(libs.junit.jupiter.api.v5100)
-    testRuntimeOnly(libs.junit.jupiter.engine.v5100)
-    testImplementation(libs.junit.jupiter.params.v5100)
-    // OkHttp
-    implementation(libs.okhttp)
-    implementation(libs.logging.interceptor)
-    implementation(libs.converter.gson)
-    implementation(libs.retrofit)
+    // -------------------- implementation --------------------
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.activity.compose)
+
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
+
     implementation(libs.androidx.material3)
-    // JUnit 5
+    implementation(libs.androidx.material.icons.extended)
+
+    implementation(libs.androidx.navigation.compose)
+
+    implementation(libs.hilt.android)
+    implementation(libs.androidx.hilt.navigation.compose)
+
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.okhttp)
+    implementation(libs.logging.interceptor)
+
+    implementation(libs.ui)
+    implementation(libs.ui.tooling.preview)
+
+    debugImplementation(libs.ui.tooling)
+
+    // -------------------- kapt --------------------
+    kapt(libs.hilt.compiler)
+
+    // -------------------- testImplementation --------------------
     testImplementation(libs.junit.jupiter.api)
-    testImplementation("org.junit.jupiter:junit-jupiter-params:5.12.2")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.0")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
-    // Mockito core
-    testImplementation("org.mockito:mockito-core:5.5.0")
-    // Mockito Kotlin helpers
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
+    testImplementation(libs.junit.jupiter.params)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.kotlin)
+    testImplementation(libs.mockito.junit.jupiter)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlin.test)
+    testImplementation(kotlin("test"))
 
-    // Mockito JUnit 5 integration
-    testImplementation("org.mockito:mockito-junit-jupiter:5.5.0")
+    // -------------------- testRuntimeOnly --------------------
+    testRuntimeOnly(libs.junit.jupiter.engine)
 
-    // JUnit 5
-    testImplementation(libs.junit.jupiter.api)        // JUnit 5 API
-    testImplementation(libs.junit.jupiter.params)     // Parameterized tests
-    testRuntimeOnly(libs.junit.jupiter.engine)        // JUnit 5 runtime engine
-
-    // Mockito for JUnit 5 (no inline engine to avoid resolution issues)
-    testImplementation(libs.mockito.core.v550)
-    testImplementation(libs.mockito.kotlin.v510)           // Kotlin helpers
-    testImplementation(libs.mockito.core)       // core
-    testImplementation(libs.mockito.kotlin)  // Kotlin helpers
-    // Optional AndroidX testing for Android unit/instrumentation tests
+    // -------------------- androidTestImplementation --------------------
     androidTestImplementation(libs.androidx.core)
     androidTestImplementation(libs.androidx.runner)
     androidTestImplementation(libs.androidx.espresso.core.v351)
-    testImplementation("io.mockk:mockk:1.13.7")
-    testImplementation("org.jetbrains.kotlin:kotlin-test")
+    androidTestImplementation (libs.ui.test.junit4)
+    androidTestImplementation(libs.androidx.junit.v115)
+    androidTestImplementation(libs.androidx.runner.v152)
+    androidTestImplementation(libs.androidx.rules)
+    debugImplementation(libs.ui.test.manifest)
 
-//    testImplementation(libs.junit)
-//    androidTestImplementation(libs.androidx.junit)
-//    androidTestImplementation(libs.androidx.espresso.core)
-//    androidTestImplementation(platform(libs.androidx.compose.bom))
-//    androidTestImplementation(libs.androidx.ui.test.junit4)
-//    debugImplementation(libs.androidx.ui.tooling)
-//    debugImplementation(libs.androidx.ui.test.manifest)
-    testImplementation(kotlin("test"))
 }

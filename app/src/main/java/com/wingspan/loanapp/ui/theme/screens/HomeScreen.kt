@@ -2,6 +2,7 @@ package com.wingspan.loanapp.ui.theme.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,13 +52,16 @@ import com.wingspan.loanapp.R
 import com.wingspan.loanapp.data.LoanProduct
 import com.wingspan.loanapp.ui.theme.screens.HomeScreen
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material3.MaterialTheme
 
 @Composable
 fun HomeScreen(navigateToLoanScreen:()->Unit) {
 
-    HomeScreenUI(navigateToLoanScreen={
-        navigateToLoanScreen()
-    })
+    HomeScreenUI(
+        navigateToLoanScreen = {
+            navigateToLoanScreen()
+        }
+    )
 
 }
 
@@ -70,7 +74,7 @@ fun HomeScreenUI(navigateToLoanScreen :()->Unit) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF5F7FA))
+                .background(MaterialTheme.colorScheme.background)
                 .systemBarsPadding()
                 .padding(padding)
         ) {
@@ -84,7 +88,11 @@ fun HomeScreenUI(navigateToLoanScreen :()->Unit) {
                 }
 
                 item {
-                    LoanProductsSection()
+                    LoanProductsSection(
+                        onApplyNowClick = {
+                            navigateToLoanScreen()
+                        }
+                    )
                 }
 
                 item {
@@ -115,6 +123,7 @@ fun HeroSection(navigateToLoanScreen : ()->Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
+
             .padding(horizontal = 16.dp)
     ) {
         Card(
@@ -208,7 +217,7 @@ fun HeroSection(navigateToLoanScreen : ()->Unit) {
 
 
 @Composable
-fun LoanProductsSection() {
+fun LoanProductsSection(onApplyNowClick:()->Unit) {
 
 
     val loanList = listOf(
@@ -269,7 +278,10 @@ fun LoanProductsSection() {
             items(loanList) { loan ->
                 LoanCard(
                     title = loan.title,
-                    image = loan.image
+                    image = loan.image,
+                    onApplyNowClick =  {
+                        onApplyNowClick()
+                    }
                 )
             }
         }
@@ -278,7 +290,7 @@ fun LoanProductsSection() {
 @Composable
 fun LoanCard(
     title: String,
-    image: Int
+    image: Int, onApplyNowClick:() ->Unit
 ) {
 
     Card(
@@ -332,6 +344,9 @@ fun LoanCard(
 
             Text(
                 text = "Apply now",
+                modifier = Modifier.clickable{
+                    onApplyNowClick()
+                },
                 color = Color(0xFF2563EB),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold
@@ -418,6 +433,7 @@ fun FeatureCard(
                 text = title,
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2
             )
         }
@@ -427,6 +443,5 @@ fun FeatureCard(
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreview(){
-
     HomeScreenUI(navigateToLoanScreen={})
 }

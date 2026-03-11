@@ -1,12 +1,16 @@
 package com.wingspan.loanapp.ui.theme.registration
 
 import android.annotation.SuppressLint
+import android.app.DatePickerDialog
+import android.content.Context
 import android.os.Build
+import android.widget.DatePicker
 import android.widget.Toast
 import androidx.annotation.RequiresExtension
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -27,7 +32,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -43,12 +50,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -60,11 +69,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.wingspan.loanapp.data.InputOptions
 import com.wingspan.loanapp.data.LoanScreens
 import com.wingspan.loanapp.data.OtpVerifyRequest
+import com.wingspan.loanapp.data.repository.RegistrationRepository
 import com.wingspan.loanapp.utils.NetworkUtils
-import com.wingspan.loanapp.ui.theme.registration.RegistrationViewModel
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+
 
 // --- Constants for employment types ---
 private const val EMPLOYMENT_SALARIED = "Salaried"
@@ -72,12 +86,30 @@ private const val EMPLOYMENT_SELF_EMPLOYED = "Self Employed"
 private const val EMPLOYMENT_PRIVATE = "Private Employee"
 private const val EMPLOYMENT_GOVERNMENT = "Government Employee"
 
-@RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+private val BluePrimary = Color(0xFF2563EB)
+private val BlueDeep = Color(0xFF1E40AF)
+private val BlueIndigo = Color(0xFF4F46E5)
+private val PageBgTop = Color(0xFFF5F7FA)
+private val PageBgBottom = Color(0xFFEFF6FF)
+private val CardBg = Color(0xFFFFFFFF)
+private val TextPrimary = Color(0xFF0F172A)
+private val TextSecondary = Color(0xFF64748B)
+private val FieldBg = Color(0xFFF8FAFF)
+private val FieldBorder = Color(0xFFE2E8F0)
+
+private val HeaderGradient = Brush.linearGradient(
+    colors = listOf(BluePrimary, BlueIndigo)
+)
+private val PrimaryButtonGradient = Brush.horizontalGradient(
+    colors = listOf(BluePrimary, BlueIndigo)
+)
+
+
 @Composable
-fun LoanApplicationScreen(onBackNavigationClick :() ->Unit,viewmodel: RegistrationViewModel=hiltViewModel()) {
+fun LoanApplicationScreen(onBackNavigationClick :() ->Unit,viewmodel: RegistrationViewModel=hiltViewModel(),navigateToHomeScreen:()->Unit) {
 
     var context = LocalContext.current
-    var currentStep by remember { mutableStateOf(1) }
+    var currentStep by remember { mutableIntStateOf(1) }
     //convert stateflow to composable state
     val uiState by viewmodel.uiState.collectAsState()
 
@@ -97,6 +129,7 @@ fun LoanApplicationScreen(onBackNavigationClick :() ->Unit,viewmodel: Registrati
             }
             is RegistrationState.FormSubmitted -> {
                 Toast.makeText(context, "Form submitted successfully", Toast.LENGTH_SHORT).show()
+                navigateToHomeScreen()
             }
             is RegistrationState.Error -> {
                 val message = (uiState as RegistrationState.Error).message
@@ -109,12 +142,12 @@ fun LoanApplicationScreen(onBackNavigationClick :() ->Unit,viewmodel: Registrati
     // --- Local helper functions ---
     fun handleStep1(): Boolean = viewmodel.validatePersonalDetails().also { valid ->
         if (!valid) return@also
-        currentStep++
-//        if (uiState is RegistrationState.OtpVerified) {
-//            currentStep++
-//        } else {
-//            Toast.makeText(context, "OTP not verified", Toast.LENGTH_SHORT).show()
-//        }
+
+        if (uiState is RegistrationState.OtpVerified) {
+            currentStep++
+        } else {
+            Toast.makeText(context, "OTP not verified", Toast.LENGTH_SHORT).show()
+        }
     }
 
     fun handleStep2(): Boolean = viewmodel.validateLoanDetails().also { valid ->
@@ -139,6 +172,8 @@ fun LoanApplicationScreen(onBackNavigationClick :() ->Unit,viewmodel: Registrati
         3 to { handleStep3() },
         4 to { handleStep4() }
     )
+
+
     LoanApplicationScreenUI(
 
         onNextButtonClick = {
@@ -158,8 +193,11 @@ fun LoanApplicationScreen(onBackNavigationClick :() ->Unit,viewmodel: Registrati
                 onOtpClick = { number ->
                     viewmodel.sendOtp(number)
                 },
-                onOtpVerify = {number,otp->
-                    viewmodel.verifyOtp(OtpVerifyRequest(number,otp))
+                onOtpVerify = { number, otp ->
+                    viewmodel.verifyOtp(OtpVerifyRequest(number, otp))
+                },
+                dobOnClick = {
+                    dateSelectDialog(context,viewmodel)
                 }
             ) },
             loanDetails = { LoanDetailsScreen(viewmodel) },
@@ -167,10 +205,146 @@ fun LoanApplicationScreen(onBackNavigationClick :() ->Unit,viewmodel: Registrati
             address = { AddressScreen(viewmodel) }
         )
     )
-
-
 }
 
+fun dateSelectDialog(context: Context, viewmodel: RegistrationViewModel) {
+    val calendar = Calendar.getInstance()
+
+    val dialog = DatePickerDialog(
+        context,
+        { _: DatePicker, year: Int, month: Int, dayOfMonth: Int ->
+
+            val selectedDate = Calendar.getInstance()
+            selectedDate.set(year, month, dayOfMonth)
+
+            val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val formattedDate = formatter.format(selectedDate.time)
+
+            viewmodel.onDobChange(formattedDate)
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
+
+    dialog.show()
+}
+
+@Composable
+fun PersonalScreen(viewModel: RegistrationViewModel,
+                   dobOnClick :() -> Unit,onOtpClick:(String)->Unit, onOtpVerify:(String, String) -> Unit) {
+    var state = viewModel.state
+    val uiState by viewModel.uiState.collectAsState() // observe API call state
+    Column {
+        // --- Name field ---
+        CustomInputField(
+            value = state.name,
+            error = state.nameError,
+            onValueChange = { viewModel.onNameChange(it) },
+            placeholder = "Enter your name",
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+        // --- DOB field ---
+        CustomInputField(
+            value = state.dob,
+            error = state.dobError,
+            onValueChange = { viewModel.onDobChange(it) },
+            placeholder = "Select Date of Birth",
+            modifier = Modifier.fillMaxWidth(),
+            readOnly = true,
+             trailingIcon = {
+                Icon(
+                    imageVector = Icons.Default.DateRange,
+                    contentDescription = "Calendar",
+                    tint = Color.Gray,
+                    modifier = Modifier
+                        .size(20.dp)
+                        .clickable { dobOnClick() }
+                )
+            }
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+        // --- Mobile number field ---
+        CustomInputField(
+            value = state.mobile,
+            error = state.mobileError,
+            onValueChange = { viewModel.onMobileChange(it) },
+            placeholder = "Enter your mobile number",
+            modifier = Modifier.fillMaxWidth(),
+            options=InputOptions( keyboardType = KeyboardType.Number, maxLength = 10,
+                onlyDigits = true),
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+        if(uiState == RegistrationState.OtpSent){
+            CustomInputField(
+                value = state.otp,
+                error = state.otpError,
+                onValueChange = { viewModel.onOtpChange(it) },
+                placeholder = "Enter OTP",
+                modifier = Modifier.fillMaxWidth(),
+                options = InputOptions(
+                    keyboardType = KeyboardType.Number,
+                    maxLength = 6,
+                    onlyDigits = true
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            GradientButton(
+                onClick = {
+                    val error = viewModel.validateOtp()
+
+                    if (error == null) {
+                        onOtpVerify(state.mobile,state.otp)
+                    }else{
+                        viewModel.updateOtpError(error)
+                    }
+                }
+            ) {
+                Text("Verify OTP")
+            }
+        }else{
+            // --- Send OTP button (before OTP sent) ---
+            GradientButton(
+                onClick = {
+                    val error = viewModel.validateMobile()
+
+                    if (error == null) {
+                        onOtpClick(state.mobile)
+                    }else{
+                        viewModel.updateMobileError(error)
+                    }
+                },
+                enabled = uiState != RegistrationState.Loading
+            ) {
+                if (uiState == RegistrationState.Loading) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Send OTP")
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        CustomInputField(
+            value = state.email,
+            error = state.emailError,
+            onValueChange = { viewModel.onEmailChange(it) },
+            placeholder = "Enter your email",
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
 
 @Composable
 fun AddressScreen(viewModel: RegistrationViewModel) {
@@ -246,208 +420,137 @@ fun LoanApplicationScreenUI(
     currentStep: Int,
     screens: LoanScreens
 ) {
-
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(
+                color = MaterialTheme.colorScheme.background
+            )
             .systemBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        Box(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+                .imePadding(),   // apply here instead of root
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            IconButton(
-                onClick = { onBackNavigationClick() },
-                modifier = Modifier.align(Alignment.CenterStart)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                elevation = CardDefaults.cardElevation(0.dp)
             ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back"
-                )
-            }
-
-            Text(
-                text = "Apply for a Loan",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.Center)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Fill in the details below to start your loan application",
-            fontSize = 14.sp,
-            color = Color.Gray,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        StepIndicator(currentStep)
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            elevation = CardDefaults.cardElevation(4.dp)
-        ) {
-
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-
-                when (currentStep) {
-                    1 -> screens.personal()
-                    2 -> screens.loanDetails()
-                    3 -> screens.financial()
-                   4 -> screens.address()
-
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(HeaderGradient, RoundedCornerShape(18.dp))
+                        .padding(horizontal = 12.dp, vertical = 12.dp)
                 ) {
 
-                    /* Back Button */
+                    IconButton(
+                        onClick = { onBackNavigationClick() },
+                        modifier = Modifier.align(Alignment.CenterStart)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
+                    }
 
-                    if (currentStep > 1) {
-                        OutlinedButton(
-                            onClick = { onBackClick() }
+                    Text(
+                        text = "Apply for a Loan",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Fill in the details below to start your loan application",
+                fontSize = 14.sp,
+                color = TextSecondary,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            StepIndicator(currentStep)
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = CardBg),
+                elevation = CardDefaults.cardElevation(8.dp)
+            ) {
+
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+
+                    when (currentStep) {
+                        1 -> screens.personal()
+                        2 -> screens.loanDetails()
+                        3 -> screens.financial()
+                        4 -> screens.address()
+
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+
+                        /* Back Button */
+
+                        if (currentStep > 1) {
+                            OutlinedButton(
+                                onClick = { onBackClick() },
+                                shape = RoundedCornerShape(14.dp)
+                            ) {
+                                Text("Back")
+                            }
+                        }
+
+                        /* Next Button */
+
+                        GradientButton(
+                            onClick = { onNextButtonClick() },
+                            modifier = Modifier
+                                .height(44.dp)
                         ) {
-                            Text("Back")
+                            Text(
+                                if (currentStep == 4) "Submit Application"
+                                else "Next Step"
+                            )
                         }
                     }
 
-                    /* Next Button */
 
-                    Button(
-                        onClick = { onNextButtonClick() }
-                    ) {
-                        Text(
-                            if (currentStep == 4) "Submit Application"
-                            else "Next Step"
-                        )
-                    }
-                }
-
-
-            }
-        }
-    }
-}
-@Composable
-fun PersonalScreen(viewModel: RegistrationViewModel,onOtpClick:(String)->Unit,onOtpVerify:(String,String) -> Unit) {
-
-
-    var state = viewModel.state
-    val uiState by viewModel.uiState.collectAsState() // observe API call state
-    Column {
-        // --- Name field ---
-        CustomInputField(
-            value = state.name,
-            error = state.nameError,
-            onValueChange = { viewModel.onNameChange(it) },
-            placeholder = "Enter your name",
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-        // --- DOB field ---
-        CustomInputField(
-            value = state.dob,
-            error = state.dobError,
-            onValueChange = { viewModel.onDobChange(it) },
-            placeholder = "Date of Birth",
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-        // --- Mobile number field ---
-        CustomInputField(
-            value = state.mobile,
-            error = state.mobileError,
-            onValueChange = { viewModel.onMobileChange(it) },
-            placeholder = "Enter your mobile number",
-            modifier = Modifier.fillMaxWidth(),
-            options=InputOptions( keyboardType = KeyboardType.Number, maxLength = 10,
-                onlyDigits = true),
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-        if(uiState == RegistrationState.OtpSent){
-            CustomInputField(
-                value = state.otp,
-                error = state.otpError,
-                onValueChange = { viewModel.onOtpChange(it) },
-                placeholder = "Enter OTP",
-                modifier = Modifier.fillMaxWidth(),
-                options = InputOptions(
-                    keyboardType = KeyboardType.Number,
-                    maxLength = 6,
-                    onlyDigits = true
-                )
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Button(
-                onClick = {
-                    val otpError = viewModel.validateOtp()
-                    state = state.copy(otpError = otpError)
-                    if (otpError == null) {
-                        onOtpVerify(state.mobile,state.otp)
-                    }
-                }
-            ) {
-                Text("Verify OTP")
-            }
-        }else{
-            // --- Send OTP button (before OTP sent) ---
-            Button(
-                onClick = {
-                    val error = viewModel.validateMobile()
-                    state = state.copy(mobileError = error)
-                    if (error == null) {
-                        onOtpClick(state.mobile)
-                    }
-                },
-                enabled = uiState != RegistrationState.Loading
-            ) {
-                if (uiState == RegistrationState.Loading) {
-                    CircularProgressIndicator(
-                        color = Color.White,
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text("Send OTP")
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        CustomInputField(
-            value = state.email,
-            error = state.emailError,
-            onValueChange = { viewModel.onEmailChange(it) },
-            placeholder = "Enter your email",
-            modifier = Modifier.fillMaxWidth()
-        )
     }
+
+
+
+
 }
+
 
 @Composable
 fun LoanDetailsScreen(
@@ -570,9 +673,10 @@ fun LoanTypeDropdown(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    color = Color(0xFFEFEFEF),
+                    color = FieldBg,
                     shape = RoundedCornerShape(10.dp)
                 )
+                .border(1.dp, FieldBorder, RoundedCornerShape(10.dp))
                 .clickable { expanded = true }
                 .padding(horizontal = 14.dp, vertical = 14.dp)
         ) {
@@ -584,12 +688,16 @@ fun LoanTypeDropdown(
 
                 Text(
                     text = if (selected.isEmpty()) placeholder else selected,
-                    color = if (selected.isEmpty()) Color.Gray else Color.Black,
+                    color = if (selected.isEmpty()) TextSecondary else TextPrimary,
                     fontSize = 14.sp,
                     modifier = Modifier.weight(1f)
                 )
 
-                Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                Icon(
+                    imageVector = Icons.Default.ArrowDropDown,
+                    contentDescription = null,
+                    tint = TextSecondary
+                )
             }
         }
 
@@ -634,7 +742,7 @@ fun EmploymentOption(
             .clip(RoundedCornerShape(5.dp))
             .border(
                 1.dp,
-                if (selected) Color(0xFF2563EB) else Color.LightGray,
+                if (selected) BluePrimary else FieldBorder,
                 RoundedCornerShape(10.dp)
             )
             .clickable { onClick() },
@@ -649,7 +757,8 @@ fun EmploymentOption(
 
         Text(
             text = title,
-            fontSize = 14.sp
+            fontSize = 14.sp,
+            color = TextPrimary
         )
     }
 }
@@ -678,12 +787,12 @@ fun StepItem(number: Int, title: String, active: Boolean) {
             modifier = Modifier
                 .size(32.dp)
                 .clip(CircleShape)
-                .background(if (active) Color(0xFF1E3A8A) else Color.LightGray),
+                .background(if (active) BlueDeep else Color(0xFFE2E8F0)),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = number.toString(),
-                color = Color.White
+                color= MaterialTheme.colorScheme.onPrimary
             )
         }
 
@@ -691,7 +800,8 @@ fun StepItem(number: Int, title: String, active: Boolean) {
 
         Text(
             text = title,
-            fontSize = 12.sp
+            fontSize = 12.sp,
+            color= MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -706,6 +816,8 @@ fun CustomInputField(
     modifier: Modifier = Modifier,
     options: InputOptions = InputOptions(),
     onClick: (() -> Unit)? = null,
+    trailingIcon: (@Composable (() -> Unit))? = null,
+    readOnly: Boolean = false
 ) {
     Column(modifier = modifier) {
         Spacer(modifier = Modifier.height(6.dp))
@@ -713,7 +825,8 @@ fun CustomInputField(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFFEFEFEF), RoundedCornerShape(10.dp))
+                .background(FieldBg, RoundedCornerShape(12.dp))
+                .border(1.dp, FieldBorder, RoundedCornerShape(12.dp))
                 .clickableIfNotNull(onClick)
                 .padding(horizontal = 14.dp, vertical = 12.dp)
         ) {
@@ -729,20 +842,23 @@ fun CustomInputField(
                         if (onClick != null) return@BasicTextField
                         onValueChange(input.filterInput(options))
                     },
-                    textStyle = TextStyle(fontSize = 14.sp, color = Color.Black),
+                    readOnly = readOnly,
+                    textStyle = TextStyle(fontSize = 14.sp, color = TextPrimary),
                     keyboardOptions = KeyboardOptions(keyboardType = options.keyboardType),
                     modifier = Modifier.weight(1f),
                     decorationBox = { innerTextField ->
                         if (value.isEmpty()) {
                             Text(
                                 text = placeholder,
-                                color = Color(0xFF9E9E9E),
+                                color = TextSecondary,
                                 fontSize = 14.sp
                             )
                         }
                         innerTextField()
                     }
                 )
+                // Right icon
+                trailingIcon?.invoke()
             }
         }
 
@@ -768,7 +884,39 @@ private fun String.filterInput(options: InputOptions): String {
 /** Helper extension for clickable modifier */
 private fun Modifier.clickableIfNotNull(action: (() -> Unit)?): Modifier =
     if (action != null) this.clickable { action() } else this
+
+@Composable
+private fun GradientButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable () -> Unit
+) {
+    val shape = RoundedCornerShape(14.dp)
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.Transparent,
+            contentColor = Color.White,
+            disabledContainerColor = Color.Transparent,
+            disabledContentColor = Color.White.copy(alpha = 0.7f)
+        ),
+        shape = shape,
+        contentPadding = ButtonDefaults.ContentPadding,
+        modifier = modifier
+            .clip(shape)
+            .background(
+                brush = if (enabled) PrimaryButtonGradient else Brush.horizontalGradient(
+                    colors = listOf(BluePrimary.copy(alpha = 0.5f), BlueIndigo.copy(alpha = 0.5f))
+                )
+            )
+    ) {
+        content()
+    }
+}
 @Preview(showBackground = true)
+@Preview(showBackground = true, device = "spec:width=411dp,height=891dp")
 @Composable
 fun LoanApplicationScreenPreview() {
     MaterialTheme {
@@ -781,12 +929,13 @@ fun LoanApplicationScreenPreview() {
 
                 onBackNavigationClick = { },
                 screens = LoanScreens(
-                    personal = {  },
-                    loanDetails = {  },
-                    financial = { },
-                    address = {  }
+                    personal = {  Text("Personal Details Screen") },
+                    loanDetails = { Text("Loan Details Screen") },
+                    financial = { Text("Financial Details Screen") },
+                    address = {  Text("Address Screen") }
                 )
             )
         }
     }
 }
+
