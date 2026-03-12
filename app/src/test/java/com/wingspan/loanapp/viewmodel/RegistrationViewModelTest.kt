@@ -98,7 +98,7 @@ class RegistrationViewModelTest {
     @ParameterizedTest
     @CsvSource(
         "'', test@gmail.com, 9876543210, 01-01-2000, false",
-        "Mounika, '', 9876543210, 01-01-2000, false",
+        "Mounika, '', 9876543210, 01-01-2000, true",
         "Mounika, test@gmail.com, 12345, 01-01-2000, false",
         "Mounika, test@gmail.com, 9876543210, '', false",
         "Mounika, test@gmail.com, 9876543210, 01-01-2000, true"

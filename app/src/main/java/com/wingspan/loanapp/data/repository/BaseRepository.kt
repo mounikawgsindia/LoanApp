@@ -41,14 +41,14 @@ abstract class BaseRepository {
                     apiError?.error ?: apiError?.message ?: "Something went wrong"
                 } catch (e: Exception) {
                     println("JSON Parsing Failed: ${e.message}")
-                    "Unexpected error"
+                    "Something went wrong"
                 }
 
                 when (code) {
 
                     in 400..499 -> {
                         // Client errors
-                        ApiResult.Error("Client Error: $message")
+                        ApiResult.Error(message)
                     }
 
                     in 500..599 -> {
@@ -57,7 +57,7 @@ abstract class BaseRepository {
                     }
 
                     else -> {
-                        ApiResult.Error("Unexpected HTTP error")
+                        ApiResult.Error(message)
                     }
                 }
             }

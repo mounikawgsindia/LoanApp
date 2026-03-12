@@ -225,10 +225,7 @@ class RegistrationViewModel @Inject constructor(private val repository: Registra
             valid = false
         }
 
-        if (state.email.isBlank()) {
-            emailError = "Enter email"
-            valid = false
-        }
+
 
         if (state.mobile.length != 10) {
             mobileError = "Enter valid mobile number"
@@ -242,7 +239,6 @@ class RegistrationViewModel @Inject constructor(private val repository: Registra
 
         state = state.copy(
             nameError = nameError,
-            emailError = emailError,
             mobileError = mobileError,
             dobError = dobError
         )

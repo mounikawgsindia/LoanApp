@@ -33,6 +33,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -65,7 +66,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-
+import com.wingspan.loanapp.R
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -112,6 +113,7 @@ fun LoanApplicationScreen(onBackNavigationClick :() ->Unit,viewmodel: Registrati
     var currentStep by remember { mutableIntStateOf(1) }
     //convert stateflow to composable state
     val uiState by viewmodel.uiState.collectAsState()
+    var showSuccessDialog by remember {mutableStateOf(false)}
 
 
 
@@ -128,8 +130,8 @@ fun LoanApplicationScreen(onBackNavigationClick :() ->Unit,viewmodel: Registrati
                 Toast.makeText(context, "OTP verified successfully", Toast.LENGTH_SHORT).show()
             }
             is RegistrationState.FormSubmitted -> {
-                Toast.makeText(context, "Form submitted successfully", Toast.LENGTH_SHORT).show()
-                navigateToHomeScreen()
+                showSuccessDialog=true
+
             }
             is RegistrationState.Error -> {
                 val message = (uiState as RegistrationState.Error).message
@@ -205,13 +207,37 @@ fun LoanApplicationScreen(onBackNavigationClick :() ->Unit,viewmodel: Registrati
             address = { AddressScreen(viewmodel) }
         )
     )
+
+    if (showSuccessDialog) {
+
+        AlertDialog(
+            onDismissRequest = { },
+            title = {
+                Text(text = "Success")
+            },
+            text = {
+                Text(" We received your application and our team will get back to you soon, Thank You")
+            },
+            confirmButton = {
+                GradientButton(
+                    onClick = {
+                        navigateToHomeScreen() },
+                ) {
+                    Text("OK")
+                }
+
+            }
+        )
+    }
 }
 
 fun dateSelectDialog(context: Context, viewmodel: RegistrationViewModel) {
+
     val calendar = Calendar.getInstance()
 
     val dialog = DatePickerDialog(
         context,
+
         { _: DatePicker, year: Int, month: Int, dayOfMonth: Int ->
 
             val selectedDate = Calendar.getInstance()

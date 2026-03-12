@@ -53,6 +53,7 @@ import com.wingspan.loanapp.data.LoanProduct
 import com.wingspan.loanapp.ui.theme.screens.HomeScreen
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.draw.clip
 
 @Composable
 fun HomeScreen(navigateToLoanScreen:()->Unit) {
@@ -76,7 +77,7 @@ fun HomeScreenUI(navigateToLoanScreen :()->Unit) {
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .systemBarsPadding()
-                .padding(padding)
+                .padding(top = 70.dp)
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize()
@@ -166,7 +167,7 @@ fun HeroSection(navigateToLoanScreen : ()->Unit) {
                         Text(
                             text = "Find the perfect loan\nfor your next move.",
                             color = Color.White,
-                            fontSize = 20.sp,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(modifier = Modifier.height(12.dp))
@@ -205,7 +206,8 @@ fun HeroSection(navigateToLoanScreen : ()->Unit) {
                         painter = painterResource(id = R.drawable.home_loan),
                         contentDescription = null,
                         modifier = Modifier
-                            .size(90.dp)
+                            .size(90.dp).clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop
                     )
                 }
             }

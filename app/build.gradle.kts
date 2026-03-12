@@ -60,6 +60,7 @@ android {
 
         unitTests.all {
             it.useJUnitPlatform()
+
         }
     }
 }
@@ -96,7 +97,7 @@ dependencies {
     implementation(libs.ui.tooling.preview)
 
     debugImplementation(libs.ui.tooling)
-
+    implementation (libs.material)
     // -------------------- kapt --------------------
     kapt(libs.hilt.compiler)
 
@@ -111,8 +112,10 @@ dependencies {
     testImplementation(libs.kotlin.test)
     testImplementation(kotlin("test"))
 
+
     // -------------------- testRuntimeOnly --------------------
     testRuntimeOnly(libs.junit.jupiter.engine)
+    testRuntimeOnly(libs.junit.platform.launcher)
 
     // -------------------- androidTestImplementation --------------------
     androidTestImplementation(libs.androidx.core)
