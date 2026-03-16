@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import android.content.Context
 import android.os.Build
+import android.view.ContextThemeWrapper
 import android.widget.DatePicker
 import android.widget.Toast
 import androidx.annotation.RequiresExtension
@@ -69,6 +70,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.wingspan.loanapp.R
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.wingspan.loanapp.data.InputOptions
@@ -232,27 +234,25 @@ fun LoanApplicationScreen(onBackNavigationClick :() ->Unit,viewmodel: Registrati
 }
 
 fun dateSelectDialog(context: Context, viewmodel: RegistrationViewModel) {
-
     val calendar = Calendar.getInstance()
-
     val dialog = DatePickerDialog(
-        context,
-
+        ContextThemeWrapper(context, R.style.BlueDatePickerDialogTheme), // added theme
         { _: DatePicker, year: Int, month: Int, dayOfMonth: Int ->
-
             val selectedDate = Calendar.getInstance()
             selectedDate.set(year, month, dayOfMonth)
-
             val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             val formattedDate = formatter.format(selectedDate.time)
-
             viewmodel.onDobChange(formattedDate)
         },
         calendar.get(Calendar.YEAR),
         calendar.get(Calendar.MONTH),
         calendar.get(Calendar.DAY_OF_MONTH)
     )
-
+    dialog.setOnShowListener {
+        // make OK / CANCEL buttons blue
+        dialog.getButton(DatePickerDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(context,R.color.blue_500))
+        dialog.getButton(DatePickerDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(context,R.color.blue_500))
+    }
     dialog.show()
 }
 
@@ -571,9 +571,6 @@ fun LoanApplicationScreenUI(
             }
         }
     }
-
-
-
 
 }
 
@@ -912,7 +909,7 @@ private fun Modifier.clickableIfNotNull(action: (() -> Unit)?): Modifier =
     if (action != null) this.clickable { action() } else this
 
 @Composable
-private fun GradientButton(
+fun GradientButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,

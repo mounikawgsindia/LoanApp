@@ -11,7 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.wingspan.loanapp.ui.theme.LoanAppTheme
-import com.wingspan.loanapp.ui.theme.screens.HomeScreen
+import com.wingspan.loanapp.ui.theme.homescreen.HomeScreen
 import com.wingspan.loanapp.ui.theme.registration.LoanApplicationScreen
 import dagger.hilt.android.AndroidEntryPoint
 

@@ -21,6 +21,23 @@ data class PersonalDataState(
     val otpError :String ?=null
 )
 
+data class LoanCaliculator(
+    val loanAmount:String = "",
+    val intrestRate: String= "",
+    val tenure : String ="",
+    val mobile : String ="",
+    val name :String = "",
+    val otp:String = "",
+
+    val loanAmountError:String? = null,
+    val intrestRateError: String? = null,
+    val tenureError : String? = null,
+    val mobileError : String? =null,
+    val nameError :String? = null,
+    val otpError:String? = null,
+
+)
+
 //data class PersonalDataState(
 //    val name: String = "mounika",
 //    val email: String = "mounika@wgsindia.com",
@@ -93,11 +110,10 @@ val pincode: String
 )
 
 
-data class ResponseData(var msg:String?,var error:String?, var success:Boolean)
+data class ResponseData(var msg:String?,var error:String?, var success:Boolean,var exists: Boolean,var message:String?)
 
 data class OtpVerifyRequest( val phone: String,
-
-                              val otp: String)
+                             val otp: String)
 data class ApiError(
     val error: String? = null,
     val message: String? = null
@@ -107,3 +123,5 @@ data class OtpResponse(
     val message: String?
 )
 data class OtpRequest(val phone:String)
+data class sendCaliculationOtp(val phone:String,val name:String)
+

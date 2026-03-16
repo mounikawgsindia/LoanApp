@@ -5,6 +5,7 @@ import com.wingspan.loanapp.data.OtpRequest
 import com.wingspan.loanapp.data.OtpResponse
 import com.wingspan.loanapp.data.OtpVerifyRequest
 import com.wingspan.loanapp.data.ResponseData
+import com.wingspan.loanapp.data.sendCaliculationOtp
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.POST
@@ -25,4 +26,13 @@ interface ApiServices {
     //verify otp
     @POST("loans/verify-otp")
     suspend fun verifyOtp(@Body request :OtpVerifyRequest): Response<ResponseData>
+
+    //caliculation
+    @POST("loans/check-number")
+    suspend fun verifyNumber(@Body request: OtpRequest): Response<ResponseData>
+
+    //caliculation send otp
+
+    @POST("loans/calculateSendOtp")
+    suspend fun sendCaliculationOtp(@Body request: sendCaliculationOtp): Response<OtpResponse>
 }
